@@ -1,14 +1,10 @@
-import sys
 import re
-from datetime import datetime
-import ctypes
 import bs4
 import quopri
 import base64
 import email
 import poplib
 poplib._MAXLINE = 20480
-from pytz import timezone
 from pprint import pprint
 
 
@@ -33,11 +29,75 @@ def getInfoFromMsg(msg):
             except:
                 decodedResult = item[1]
             itemDict[item[0].lower()] = decodedResult
-            print(str(itemDict))
     return itemDict
 
 
-def getContentTextAndAttachmentFromMsg():...
+def getContentTextAndAttachmentFromMsg(msg):
+    attachmentLst = []
+    mailStr = ''
+
+    # ===============================================================================
+    def getPayloadLstFromMsg():
+        payloadCheckLst = [msg]
+        payloadLst = []
+        while payloadCheckLst:
+            if payloadCheckLst[0].is_multipart():
+                payloadCheckLst += payloadCheckLst[0].get_payload()
+                del payloadCheckLst[0]
+            else:
+                payloadLst.append(payloadCheckLst[0])
+                del payloadCheckLst[0]
+        return payloadLst
+    # -------------------------------------------------------------------------------
+    payloadLst = getPayloadLstFromMsg()
+
+
+    # ===============================================================================
+    def getDecodedPayload(payload):
+        enc = payload.get_content_charset()
+        if not enc: enc = 'utf-8'
+        return payload.get_payload(decode=True).decode(enc)    
+    # -------------------------------------------------------------------------------
+    def getAttachmentNameFromPayloadInfo():
+        try:
+            filenameBytes = re.findall('"([\s|\S]+)"',[x for x in payloadInfo[1].split(';') if 'filename' in x][0])[0]
+            attachment = decodeAndMerge(filenameBytes).replace(r"'", r"").replace(r'"', r'').strip()
+        except:
+            attachment = '첨부파일이름오류'
+        finally: 
+            return attachment    
+    # -------------------------------------------------------------------------------
+    for payload in payloadLst:
+        contentType = payload.get_content_type()
+
+        if contentType == 'text/plain':
+            mailStr = getDecodedPayload(payload)
+
+        elif contentType == 'text/html':
+            mailHtml = getDecodedPayload(payload)
+
+        elif (payload.get_content_disposition() == 'attachment'):
+            for payloadInfo in payload.items():
+                if 'Content-Disposition' in payloadInfo:
+                    attachment = getAttachmentNameFromPayloadInfo()
+                    attachmentLst.append(attachment)
+                    break
+    else:
+        attachment = '\n'.join(attachmentLst).strip()
+    # ===============================================================================
+    def getContentText():
+        if mailStr:
+            contentText = mailStr
+        else:
+            soup = bs4.BeautifulSoup(mailHtml,'html.parser')
+            contentText = soup.get_text()
+        contentText.replace(r"'", r"\'").replace(r'"', r'\"').strip()
+        contentText = contentText.replace("&nbsp;",' ').replace("&gt;",'>').replace("&lt;",'<')
+        contentText = re.sub('\n[\n\s\t]+\n','\n\n',contentText)
+        return contentText
+    # -------------------------------------------------------------------------------
+    contentText = getContentText()
+    return (contentText, attachment)
 
 
 # [문자 디코딩] ===============================================================================
@@ -71,7 +131,6 @@ def decodeAndMerge(oriBytesToDecode):
         decodedResult += decodeBytes (bytesToDecode)
     return decodedResult
 
-
 # ===========================================================================================
 ID = 'id'
 PW = 'pw'
@@ -87,11 +146,14 @@ if __name__ == '__main__':
         msg = email.message_from_bytes(b'\n'.join(mailClient.retr(idx)[1]))
 
         # 메일정보 읽기
-        (subject,mailFrom,mailTo,mailCc,mailDate), timeObj = getInfoFromMsg(msg)
+        itemDict = getInfoFromMsg(msg)
+        pprint(itemDict)
         
         # ... # mailDate를 latestMailTime과 비교해서 저장여부 확인
 
         # # 메일본문/첨부파일 읽기
-        # (contentText, attachment) = getContentTextAndAttachmentFromMsg(msg)         
+        (contentText, attachment) = getContentTextAndAttachmentFromMsg(msg)
+        pprint(contentText)
+        pprint(attachment)
         
         ... # 읽은 정보를 DB에 저장하기
