@@ -24,7 +24,6 @@ class TitleMaker:
 
 if __name__ == "__main__":
     stickerPath = "sticker"
-    stickers = [os.path.join(stickerPath, x) for x in os.listdir(stickerPath) if x.endswith(".png")]
 
     tm = TitleMaker()
     [tm.putSticker(y) for y in [os.path.join(stickerPath, x) for x in os.listdir(stickerPath) if x.endswith(".png")]]
