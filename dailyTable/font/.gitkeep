@@ -1,17 +1,7 @@
-[DEFAULT]
-morning = 06:03
-work1 = 일과표생성 프로그램 작성
-work2 = 정보처리기사 모의고사
-work3 = 노트북 MYSQL 세팅
-memo = 프로그램 추가사항 \ - 오토핫키 최적화 \ - 이모티콘 최적화
-checkRoutine = xoxx
-checkWork = oxx
-checkHobby = oxxxxx
-happy = 80
+폰트.ttf 파일 위치
 
-date = 
-routine1 = 게임
-routine2 = 기초수학
-routine3 = 산책
-routine4 = 링 / 런
-title = 주요 일정
+consola.ttf
+HYQingZhouXingW-2.ttf
+Seven Segment.ttf
+SuseongDotum.ttf
+나눔손글씨 옥비체.ttf
